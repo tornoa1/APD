@@ -1,0 +1,143 @@
+#==================================================================#
+#                    ANÁLISIS EXPLORATORIO DE DATOS                #
+#==================================================================#
+
+library(dplyr)
+library(VIM)
+library(DMwR2)
+library(missForest)
+library(GGally)
+library(ggplot2)
+library(corrplot)
+library(corrr)
+library(vioplot)
+library(reshape2)
+library(aplpack)
+library(fmsb)
+#------------------------------------------------------------------#
+#  Cargando la base de datos                                       #
+#------------------------------------------------------------------#
+
+Gasto <- read.delim("clipboard")
+Gasto
+dim(Gasto)
+
+#------------------------------------------------------------------#
+#  Imputación de datos                                             #
+#------------------------------------------------------------------#
+
+#Eliminacion de casos
+# -------------------
+sum(is.na(Gasto))
+Gasto1=na.omit(Gasto)
+dim(Gasto1)
+sum(is.na(Gasto1))
+
+# Con librería DMwR
+#------------------
+Gasto2<-centralImputation(Gasto)
+dim(Gasto2)
+sum(is.na(Gasto2))
+
+#Con librería VIM
+#----------------
+Gasto3<-initialise(Gasto,method="median")
+sum(is.na(Gasto3))
+sum(is.na(Gasto))
+
+
+# Imputar valores missing usando el algoritmo Random Forest
+#----------------------------------------------------------
+Gasto4<-missForest(Gasto[,-5])$ximp
+sum(is.na(Gasto4))
+
+
+#------------------------------------------------------------------#
+#  1. NOTACIONES Y DEFINICIONES MATEMÁTICAS                        #
+#------------------------------------------------------------------#
+
+# vector de medias
+# -----------------
+vmed<-colMeans(Gasto2[,-5])
+vmed
+
+
+# Matriz de correlacones
+# ---------------------------------
+corre<-cor(Gasto2[,-5])
+corre
+
+#------------------------------------------------------------------#
+#    2. GRÁFICOS EXPLORATORIOS                                     #
+#------------------------------------------------------------------#
+boxplot(Gasto2[,-5])
+vioplot(Gasto2[,-5])
+boxplot(Gasto2$Alimentos~Gasto2$Ciudad,col = "lightgray")
+vioplot(Gasto2$Alimentos~Gasto2$Ciudad,col = "lightgray")
+
+# Gráficas de dispersión
+# ======================
+
+pairs(Gasto2[,-5],pch = 19) 
+pairs(Gasto2[,-5],col = factor(Gasto2$Ciudad), pch = 19)
+
+# Gráficas de correlación
+# =======================
+
+ggscatmat(Gasto2[,-5])
+
+ggpairs(Gasto2,aes(colour=Ciudad))
+
+# Calor
+corrplot(cor(Gasto2[,-5]), method = "shade", tl.col = "black")     
+
+# Círculos
+corrplot(cor(Gasto2[,-5]), method = "circle", tl.col = "black") 
+
+# Numéricos
+corrplot(cor(Gasto2[,-5]), method = "number", tl.col = "black")
+
+# Numéricos y calor
+corrplot.mixed(cor(Gasto2[,-5]),lower = "number", upper = "shade", tl.col = "black")
+
+# Gráficas de redes
+# =======================
+network_plot(corre,repel = F)
+
+
+# Gráfico de coordenas paralelas
+# ------------------------------
+ggparcoord(data = Gasto2, columns = 1:4, groupColumn =5,showPoints = F)
+
+
+# Gráficas de chernoff (caras)
+# =============================
+
+Notas <- read.delim("clipboard")
+
+dat <- data.frame(Notas[,-1],row.names = Notas[,1])
+Caras<-faces(dat)
+
+# Gráficas de estrellas
+# =======================
+
+stars(dat,flip.labels = FALSE)
+palette("Okabe-Ito")
+stars(dat,draw.segments = T,flip.labels = F, key.loc = c(15.5, 2.5))
+
+
+# Transformación de datos
+Depar<-read.delim("clipboard")
+Depar1 <- data.frame(Depar[,-1], row.names=Depar[,1])
+boxplot(Depar1)
+#------------------------------------------------------------------#
+#                  Corriengo el valor atípico                      #
+#------------------------------------------------------------------#
+Depar2<-Depar1
+hist(Depar2$Inter)
+Depar2$Inter<-sqrt(Depar2$Inter)
+boxplot(Depar2)
+
+# Estandarización de variables
+Depar3 <- scale(Depar2)
+boxplot(Depar3)
